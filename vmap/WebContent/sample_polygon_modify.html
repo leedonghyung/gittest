@@ -1,0 +1,186 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=Edge">
+<title>mapToolBar</title>
+
+<!-- API key를 포함하여 브이월드 API URL을 지정하여 호출 시작  -->
+<script type="text/javascript" src="http://map.vworld.kr/js/vworldMapInit.js.do?apiKey=767B7ADF-10BA-3D86-AB7E-02816B5B92E9"></script>
+<!-- API key를 포함하여 브이월드 API URL을 지정하여 호출끝  -->
+
+<script type="text/javascript">
+
+
+var map, vectors, controls;
+var apiMap;//2D map
+var SOPPlugin;//3D map
+vworld.showMode = false;//브이월드 배경지도 설정 컨트롤 유무(true:배경지도를 컨트롤 할수 있는 버튼 생성/false:버튼 해제) 
+
+/**
+ * - rootDiv, mapType, mapFunc, 3D initCall, 3D failCall
+ * - 브이월드 5가지 파라미터를 셋팅하여 지도 호출
+ */
+vworld.init("vMap", "map-first",
+	function() {
+		apiMap = this.vmap;//브이월드맵 apiMap에 셋팅 
+		apiMap.setBaseLayer(apiMap.vworldBaseMap);//기본맵 설정 
+		apiMap.setControlsType({"simpleMap":true});	//간단한 화면	
+		apiMap.addVWORLDControl("zoomBar");
+		
+		  var renderer = OpenLayers.Util.getParameters(window.location.href).renderer;
+		  console.log(renderer);
+          renderer = (renderer) ? [renderer] : OpenLayers.Layer.Vector.prototype.renderers;
+          console.log(renderer);
+          polygonLayer = new OpenLayers.Layer.Vector("Polygon Layer", {
+              renderers: renderer
+          });
+
+          apiMap.addLayers([polygonLayer]);
+          apiMap.addControl(new OpenLayers.Control.LayerSwitcher());
+          apiMap.addControl(new OpenLayers.Control.MousePosition());
+          
+          if (console && console.log) {
+              function report(event) {
+                  console.log(event.type, event.feature ? event.feature.id : event.components);
+                  if(event.type==="afterfeaturemodified"){
+                	  var confirmPolygon = function () {		            	
+    		            	return confirm("수정하시겠습니까?")		            	
+    		            	};
+    		            if (!confirmPolygon()) {
+    		                polygonLayer.removeFeatures(event.features);
+    		            }else{
+    		            	//생성된 Polygon 데이터
+    		            	console.log(event.features[0].geometry.bounds);
+    		            	alert("Polygon Layer 데이터 저장!!!!!");
+    		            }
+                  }
+              }
+              polygonLayer.events.on({
+                  "beforefeaturemodified": report,
+                  "featuremodified": report,
+                  "afterfeaturemodified": report,
+                  "vertexmodified": report,
+                  "sketchmodified": report,
+                  "sketchstarted": report,
+                  "sketchcomplete": report,
+                  featuresadded: function (event) {
+  		            var confirmPolygon = function () {		            	
+  		            	return confirm("등록하시겠습니까?")		            	
+  		            	};
+  		            if (!confirmPolygon()) {
+  		                polygonLayer.removeFeatures(event.features);
+  		            }else{
+  		            	//데이터 생성		            	
+  		            	console.log(event.features[0].getBounds());
+  		            	console.log(event.features[0].getBounds().toGeometry().components);
+  		            	alert("Polygon Layer 데이터 저장!!!!!");
+  		            }
+  		        }
+              });
+          }
+          selectControl = new OpenLayers.Control.SelectFeature(polygonLayer,
+                  {hover: false,onSelect: onFeatureSelect,onUnselect: onFeatureUnselect});
+          
+          drawControls = {              
+              polygon: new OpenLayers.Control.DrawFeature(polygonLayer,
+                          OpenLayers.Handler.Polygon),              
+              modify: new OpenLayers.Control.ModifyFeature(polygonLayer),
+              select: selectControl
+          };
+          
+          for(var key in drawControls) {
+        	  apiMap.addControl(drawControls[key]);
+          }                    
+		apiMap.setCenterAndZoom(14243425.793355, 4342305.8698004, 9);//화면중심점과 레벨로 이동 (초기 화면중심점과 레벨) 	
+	},
+	function (obj){//3D initCall(성공)
+		SOPPlugin = obj;
+	},
+	function (msg){//3D failCall(실패)
+		alert(msg);
+	}
+);
+function onPopupClose(evt) {
+    selectControl.unselect(selectedFeature);
+}
+function onFeatureSelect(feature) {           
+    selectedFeature = feature;
+   popup = new OpenLayers.Popup.FramedCloud("chicken", 
+                             feature.geometry.getBounds().getCenterLonLat(),
+                             null,
+                             "<div style='font-size:.8em'>Feature: " + feature.id +"<br>Area: " + feature.geometry.getArea()+"</div>",
+                             null, true, onPopupClose);
+   feature.popup = popup;
+    apiMap.addPopup(popup);          
+}
+function onFeatureUnselect(feature) {
+	apiMap.removePopup(feature.popup);
+    feature.popup.destroy();
+    feature.popup = null;
+}
+function update() {
+    // reset modification mode
+    drawControls.modify.mode = OpenLayers.Control.ModifyFeature.RESHAPE;
+    var rotate = document.getElementById("rotate").checked;
+    if(rotate) {
+    	drawControls.modify.mode |= OpenLayers.Control.ModifyFeature.ROTATE;
+    }
+}
+function toggleControl(element) {
+    for(key in drawControls) {
+        var control = drawControls[key];
+        if(element.value == key && element.checked) {
+            control.activate();
+        } else {
+            control.deactivate();
+        }
+    }
+}
+
+
+</script>
+</head>
+<body onload="vworld.init()">
+
+<!-- 지도가 들어갈 영역 시작 -->
+<div id="vMap" style="width:100%;height:650px;left:0px;top:0px"></div>
+<!-- 지도가 들어갈 영역 끝 -->
+    
+    <div id="controls">
+        <ul id="controlToggle">
+            <li>
+                <input type="radio" name="type" value="none" id="noneToggle"
+                       onclick="toggleControl(this);" checked="checked" />
+                <label for="noneToggle">navigate</label>
+            </li>
+            <li>
+                <input type="radio" name="type" value="polygon" id="polygonToggle" onclick="toggleControl(this);" />
+                <label for="polygonToggle">폴리곤생성</label>
+            </li>
+            <li>
+            <input type="radio" name="type" value="select" id="selectToggle"
+                   onclick="toggleControl(this);" />
+            <label for="selectToggle">폴리곤선택 click</label>
+            </li>
+            <li>
+                <input type="radio" name="type" value="modify" id="modifyToggle"
+                       onclick="toggleControl(this);" />
+                <label for="modifyToggle">폴리곤 수정</label>
+                <ul>
+                    <li>
+                        <input id="createVertices" type="checkbox" checked
+                               name="createVertices" onchange="update()" />
+                        <label for="createVertices">allow vertices creation</label>
+                    </li>
+                    <li>
+                        <input id="rotate" type="checkbox"
+                               name="rotate" onchange="update()" />
+                        <label for="rotate">allow rotation</label>
+                    </li>                    
+                </ul>
+            </li>
+        </ul>
+    </div>
+</body>
+</html>

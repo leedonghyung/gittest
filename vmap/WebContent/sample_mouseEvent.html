@@ -1,0 +1,200 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=Edge">
+<title>mouseEvent</title>
+
+<!-- API key를 포함하여 브이월드 API URL을 지정하여 호출 시작  -->
+<script type="text/javascript" src="http://map.vworld.kr/js/vworldMapInit.js.do?apiKey=767B7ADF-10BA-3D86-AB7E-02816B5B92E9"></script>
+<!-- API key를 포함하여 브이월드 API URL을 지정하여 호출끝  -->
+
+<script type="text/javascript">
+
+var apiMap;//2D map
+var SOPPlugin;//3D map
+vworld.showMode = false;//브이월드 배경지도 설정 컨트롤 유무(true:배경지도를 컨트롤 할수 있는 버튼 생성/false:버튼 해제) 
+
+/**
+ * - rootDiv, mapType, mapFunc, 3D initCall, 3D failCall
+ * - 브이월드 5가지 파라미터를 셋팅하여 지도 호출
+ */
+vworld.init("vMap", "map-first", 
+	function() {        
+		apiMap = this.vmap;//브이월드맵 apiMap에 셋팅 
+		apiMap.setBaseLayer(apiMap.vworldBaseMap);//기본맵 설정 
+		apiMap.setControlsType({"simpleMap":true});	//간단한 화면	
+		apiMap.addVWORLDControl("zoomBar");
+		apiMap.setCenterAndZoom(14243425.793355, 4342305.8698004, 8);//화면중심점과 레벨로 이동 (초기 화면중심점과 레벨) 	
+		apiMap.addEvent("movestart", mapEvt);
+		apiMap.addEvent("move", mapEvt);
+		apiMap.addEvent("moveend", mapEvt);
+		apiMap.addEvent("zoomend", mapEvt);
+		apiMap.addEvent("mouseover", moveAlert);
+		apiMap.addEvent("mouseout", moveAlert);
+		apiMap.addEvent("mousemove", moveAlert);
+		apiMap.removeEvent("movestart", mapEvt);
+		apiMap.removeEvent("move", mapEvt);
+		apiMap.removeEvent("moveend", mapEvt);
+		apiMap.removeEvent("zoomend", mapEvt);
+		apiMap.removeEvent("mouseover", moveAlert);
+		apiMap.removeEvent("mouseout", moveAlert);
+		apiMap.removeEvent("mousemove", moveAlert);
+	},
+	function (obj){//3D initCall(성공)
+		SOPPlugin = obj;
+	},
+	function (msg){//3D failCall(실패)
+		alert(msg);
+	}
+);
+
+/**
+ * 지도 이동 시작시 발생하는 이벤트
+ */
+function moveStart(){
+	
+	apiMap.addEvent("movestart", mapEvt);//(이벤트이름, 이벤트가 실행시 발생하는 function 이름)
+	alert("movestart 이벤트가 등록하였습니다!!.");
+}
+
+/**
+ * 지도 이동시 발생하는 이벤트
+ */
+function move(){
+	removeEvent();
+	apiMap.addEvent("move", mapEvt);//(이벤트이름, 이벤트가 실행시 발생하는 function 이름)
+	alert("move 이벤트가 등록하였습니다.");
+}
+
+/**
+ * 지도 이동 종료시 발생하는 이벤트
+ */
+function moveend(){
+	removeEvent();
+	apiMap.addEvent("moveend", mapEvt);//(이벤트이름, 이벤트가 실행시 발생하는 function 이름)
+	alert("moveend 이벤트가 등록하였습니다.");
+}
+
+/**
+ * zoom 이벤트 종료시 발생하는 이벤트
+ */
+function zoomend(){
+	removeEvent();
+	apiMap.addEvent("zoomend", mapEvt);//(이벤트이름, 이벤트가 실행시 발생하는 function 이름)
+	alert("zoomend 이벤트가 등록하였습니다.");
+}
+
+/**
+ * 지도위에 마우스가 올라왔을때 발생하는 이벤트
+ */
+function mouseover(){
+	removeEvent();
+	apiMap.addEvent("mouseover", moveAlert);//(이벤트이름, 이벤트가 실행시 발생하는 function 이름)
+	alert("mouseover 이벤트가 등록하였습니다.");
+}
+
+/**
+ * 지도 밖으로 마우스가 나갔을 때 발생하는 이벤트
+ */
+function mouseout(){
+	removeEvent();
+	apiMap.addEvent("mouseout", moveAlert);//(이벤트이름, 이벤트가 실행시 발생하는 function 이름)
+	alert("mouseout 이벤트가 등록하였습니다.");
+}
+
+/**
+ * 마우스가 이동할때 발생하는 이벤트
+ */
+function mousemove(){
+	removeEvent();
+	apiMap.addEvent("mousemove", moveAlert);//(이벤트이름, 이벤트가 실행시 발생하는 function 이름)
+	alert("mousemove 이벤트가 등록하였습니다.");
+}
+
+/**
+ * 센터좌표값,레벨,스케일
+ */
+function mapEvt(e){
+	var point = 
+	apiMap.getTransformXY
+	(apiMap.getCenter().lon,apiMap.getCenter().lat,
+			"EPSG:900913","EPSG:4326");//구글좌표를 경위도 좌표로 변환
+	
+	if (point== null) return;
+	document.getElementById('centerx').value = point.x;//경위도 좌표 x
+	document.getElementById('centery').value = point.y;//경위도 좌표 y 		
+	document.getElementById('centergx').value = apiMap.getCenter().lon;//구글좌표 x
+	document.getElementById('centergy').value = apiMap.getCenter().lat;//구글좌표 y
+	document.getElementById('level').value = apiMap.getZoom();//레벨	
+	document.getElementById('scale').value = apiMap.getScale();//스케일
+}
+
+/**
+ * 마우스 이벤트를 위한 테스트 함수
+ */
+var mMove = 0;
+function moveAlert(){
+	mMove = mMove+1;
+	alert(mMove);
+}
+
+/**
+ * 이벤트 삭제
+ */
+function removeEvent(){
+
+	if(apiMap.isEventExist("movestart", mapEvt)){//이벤트가 있으면
+		apiMap.removeEvent("movestart", mapEvt);//이벤트를 삭제
+		alert("movestart 이벤트가 삭제되었습니다.");
+	}else if(apiMap.isEventExist("move", mapEvt)){
+		apiMap.removeEvent("move", mapEvt);
+		alert("move 이벤트가 삭제되었습니다.");
+	}else if(apiMap.isEventExist("moveend", mapEvt)){
+		apiMap.removeEvent("moveend", mapEvt);
+		alert("moveend 이벤트가 삭제되었습니다.");
+	}else if(apiMap.isEventExist("zoomend", mapEvt)){
+		apiMap.removeEvent("zoomend", mapEvt);
+		alert("zoomend 이벤트가 삭제되었습니다.");
+	}else if(apiMap.isEventExist("mouseover", moveAlert)){
+		apiMap.removeEvent("mouseover", moveAlert);
+		alert("mouseover 이벤트가 삭제되었습니다.");
+	}else if(apiMap.isEventExist("mouseout", moveAlert)){
+		apiMap.removeEvent("mouseout", moveAlert);
+		alert("mouseout 이벤트가 삭제되었습니다.");
+	}else if(apiMap.isEventExist("mousemove", moveAlert)){
+		apiMap.removeEvent("mousemove", moveAlert);
+		alert("mousemove 이벤트가 삭제되었습니다.");
+	}
+}
+
+</script>
+</head>
+<body>
+
+<!-- 지도가 들어갈 영역 시작 -->
+<div id="vMap" style="width:100%;height:650px;left:0px;top:0px"></div>
+<!-- 지도가 들어갈 영역 끝 -->
+
+<div id="desc" style="padding:5px 0 0 5px;">
+	<button type="button" onclick="moveStart();">movestart 이벤트 등록</button>
+	<button type="button" onclick="move();">move 이벤트 등록</button>
+	<button type="button" onclick="moveend();">moveend 이벤트 등록</button>
+	<button type="button" onclick="zoomend();">zoomend 이벤트 등록</button>
+	<button type="button" onclick="mouseover();">mouseover 이벤트 등록</button>
+	<button type="button" onclick="mouseout();">mouseout 이벤트 등록</button>
+	<button type="button" onclick="mousemove();">mousemove 이벤트 등록</button>
+	<br/>
+	현재레벨:
+	<input type="text" name='q' id='level' value="0" maxlength="20" style="ime-mode:active;width:30px;"/>
+	축척:
+	<input type="text" name='q' id='scale' value="0" maxlength="20" style="ime-mode:active;width:50px;"/>
+	화면중심점(경위도4326):
+	<input type="text" name='q' id='centerx' value="0" maxlength="20" style="ime-mode:active;width:100px;"/>
+	<input type="text" name='q' id='centery' value="0" maxlength="20" style="ime-mode:active;width:100px;"/>
+	화면중심점(구글좌표):
+	<input type="text" name='q' id='centergx' value="0" maxlength="20" style="ime-mode:active;width:100px;"/>
+	<input type="text" name='q' id='centergy' value="0" maxlength="20" style="ime-mode:active;width:100px;"/>
+</div>
+</body>
+</html>
